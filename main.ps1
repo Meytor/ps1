@@ -1,58 +1,173 @@
-# Funci髇 para escribir un car醕ter en una posici髇 espec韋ica en la consola
-function Write-CharAtPosition {
-    param(
-        [string]$char,
-        [string]$char2,
-        [int]$x,
-        [int]$y
-    )
-    $host.UI.RawUI.CursorPosition = New-Object System.Management.Automation.Host.Coordinates $x, $y
-    Write-Host -NoNewline $char
-}
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+# Ruta absoluta de la imagen
+$playersprite = Join-Path -Path $PSScriptRoot -ChildPath ".\pgif.gif"
+# Ruta absoluta de la imagen
+$salsasprite = Join-Path -Path $PSScriptRoot -ChildPath ".\salsa.png"
+# Ruta absoluta de la posicion del jugador
+$absoluteCoordsPath = Join-Path -Path $PSScriptRoot -ChildPath ".\posicion.txt"
+# Ruta de la imagen de fondo
+$background = Join-Path -Path $PSScriptRoot -ChildPath "explain.gif"  # Ajusta la ruta de la imagen seg煤n tu ubicaci贸n
 
-# Funci髇 para guardar las coordenadas en un archivo
-function GuardarCoordenadas {
-    $coordenadas = "$x,$y"
-    $coordenadas | Out-File -FilePath "coordenadas.txt"
-}
+# Crear una ventana
+$Form = New-Object System.Windows.Forms.Form
+$Form.Text = "PS1 SinglePlayer"
+$Form.Size = New-Object System.Drawing.Size(600, 600)
+$Form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedSingle  # Fija el tama帽o de la ventana
+$Form.MaximizeBox = $false  # Desactiva el bot贸n maximizar
+
+# Calcular la posici贸n para centrar la ventana
+$screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+$left = ($screen.Width - $Form.Width) / 2
+$top = ($screen.Height - $Form.Height) / 2
+$Form.StartPosition = "Manual"
+$Form.Location = New-Object System.Drawing.Point($left, $top)
+
+# Crear un control PictureBox para mostrar el fondo GIF
+$fondoPictureBox = New-Object System.Windows.Forms.PictureBox
+$fondoPictureBox.Size = $form.ClientSize
+$fondoPictureBox.Location = New-Object System.Drawing.Point(0, 0)
+$fondoPictureBox.SizeMode = "StretchImage"  # Ajustar el modo de visualizaci贸n para que la imagen se ajuste al control
+$fondoPictureBox.Image = [System.Drawing.Image]::FromFile($background)
+
+# A帽adir el control PictureBox al formulario
+# Mover el fondo GIF al fondo
 
 
-# Coordenadas de la posici髇 en la consola
-$x = 1
-$y = 1
+###### salsa
 
+# Funci贸n para verificar la colisi贸n entre dos PictureBox
+function CheckCollision {
+    param($pb1, $pb2)
+    # Obtener los rect谩ngulos delimitadores de los PictureBox
+    $rect1 = $pb1.Bounds
+    $rect2 = $pb2.Bounds
 
-# Car醕ter a escribir
-$char = "O"
-$char2 = " "
-
-# Guardar la representaci髇 en una variable
-$consoleOutput = $char
-
-# Mostrar la variable
-$consoleOutput
-
-
-
-# Funci贸n para capturar la entrada de teclado
-Function Get-KeyPress {
-    $key = $host.UI.RawUI.ReadKey("IncludeKeyDown,NoEcho").VirtualKeyCode
-    return $key
-}
-
-# Bucle para detectar la tecla presionada
-while ($true) {
-    $keyCode = Get-KeyPress
-    Write-CharAtPosition -char $char2 -x $x -y $y
-    GuardarCoordenadas -x $x -y $y
-    switch ($keyCode) {
-        37 { $x-- }
-        38 { $y--  }
-        39 { $x++ }
-        40 { $y++ }
-        default {  }
+    # Verificar si los rect谩ngulos se superponen
+    if ($rect1.IntersectsWith($rect2)) {
+        return $true  # Colisi贸n detectada
+    } else {
+        return $false  # No hay colisi贸n
     }
-
-    Write-CharAtPosition -char $char -x $x -y $y
-
 }
+# Crear un PictureBox para el objetivo
+$Objective = New-Object System.Windows.Forms.PictureBox
+$Objective.Size = New-Object System.Drawing.Size(20, 53)
+$Objective.Image = [System.Drawing.Image]::FromFile($salsasprite)
+$Objective.BackColor = [System.Drawing.Color]::Transparent
+$Objective.Location = New-Object System.Drawing.Point(150, 100)
+
+# funcion de puntos
+
+function SumarPuntos {
+    param(
+        [ref]$Puntos
+    )
+    # Sumar 1 al valor de la variable $Puntos
+    $Puntos.Value++
+}
+
+# Inicializar la variable de puntos
+$Puntos = [ref]0
+# Llamar a la funci贸n para sumar puntos y actualizar la variable
+SumarPuntos -Puntos $Puntos
+# Imprimir el resultado
+Write-Host "Puntos despues de sumar: $($Puntos.Value)"
+
+############ player sprite
+
+# Crear un PictureBox para mostrar la imagen de el jugador
+$PictureBox = New-Object System.Windows.Forms.PictureBox
+$PictureBox.Size = New-Object System.Drawing.Size(28, 60)
+$PictureBox.Location = New-Object System.Drawing.Point(260, 230)
+$PictureBox.Image = [System.Drawing.Image]::FromFile($playersprite)
+
+# Cargar la imagen del jugador con fondo transparente
+$playerImage = [System.Drawing.Image]::FromFile($playersprite)
+# Configurar el control PictureBox para que el fondo sea transparente
+$PictureBox.BackColor = [System.Drawing.Color]::Transparent
+$PictureBox.BackgroundImage = $playerImage
+$PictureBox.BackgroundImageLayout = "None"  # Establecer el modo de dise帽o de la imagen a None para evitar que se estire
+
+############ Crear una etiqueta para mostrar las coordenadas
+
+$Label = New-Object System.Windows.Forms.Label
+$Label.AutoSize = $true
+$Label.Location = New-Object System.Drawing.Point(10, 10)
+
+
+############# SE A脩ADEN LAS IMAGENES A EL FORM
+
+$Form.Controls.Add($Label)
+$Form.Controls.Add($PictureBox)
+$Form.Controls.Add($Objective)
+$form.Controls.Add($fondoPictureBox)
+
+
+
+# Variable para controlar el movimiento horizontal y vertical
+$MoveX = 0
+$MoveY = 0
+
+# Funcion para actualizar la variable $MoveX y $MoveY cuando se presionan y sueltan las teclas de flecha
+function UpdateMovement {
+    param($keyCode, $pressed)
+    if ($keyCode -eq [System.Windows.Forms.Keys]::Left) {
+        $global:MoveX = if ($pressed) { -1 } else { 0 }
+    } elseif ($keyCode -eq [System.Windows.Forms.Keys]::Right) {
+        $global:MoveX = if ($pressed) { 1 } else { 0 }
+    } elseif ($keyCode -eq [System.Windows.Forms.Keys]::Up) {
+        $global:MoveY = if ($pressed) { -1 } else { 0 }
+    } elseif ($keyCode -eq [System.Windows.Forms.Keys]::Down) {
+        $global:MoveY = if ($pressed) { 1 } else { 0 }
+    }
+}
+
+# Evento KeyDown para detectar cuando se presionan las teclas de flecha
+$form.Add_KeyDown({
+    param($sender, $e)
+    UpdateMovement $e.KeyCode $true
+})
+
+# Evento KeyUp para detectar cuando se sueltan las teclas de flecha
+$form.Add_KeyUp({
+    param($sender, $e)
+    UpdateMovement $e.KeyCode $false
+})
+
+# Funcion para actualizar la posicion del jugador y guardarla en un archivo
+function UpdatePlayerPosition {
+    $newX = $PictureBox.Left + ($MoveX * 5)  # Multiplicamos por 5 para ajustar la velocidad
+    $newY = $PictureBox.Top + ($MoveY * 5)  # Multiplicamos por 5 para ajustar la velocidad
+    $PictureBox.Location = New-Object System.Drawing.Point($newX, $newY)
+
+    # Verificar colisi贸n
+    if (CheckCollision $PictureBox $Objective) {
+        SumarPuntos -Puntos $Puntos
+        # Imprimir el resultado
+        Write-Host "Puntos despues de sumar: $($Puntos.Value)"
+        $Label.Text = $Puntos.Value
+        # Obtener los l铆mites para la posici贸n aleatoria dentro de los l铆mites del formulario
+        $smaxX = $Form.Width - $Objective.Width
+        $smaxY = $Form.Height - $Objective.Height
+        # Generar una posici贸n aleatoria dentro de los l铆mites del formulario
+        $snewX = Get-Random -Minimum 0 -Maximum $smaxX
+        $snewY = Get-Random -Minimum 0 -Maximum $smaxY
+        # Establecer la nueva ubicaci贸n del objeto
+        $Objective.Location = New-Object System.Drawing.Point($snewX, $snewY)
+    }
+    
+    # Guardar la posicion en el archivo de texto
+    $position = "X: $newX, Y: $newY"
+    $position | Out-File -FilePath $absoluteCoordsPath -Encoding utf8
+}
+# Crea un temporizador para actualizar la posicion del jugador periodicamente
+$timer = New-Object System.Windows.Forms.Timer
+$timer.Interval = 50  # Intervalo de actualizacion en milisegundos (ajustable segon la velocidad deseada)
+$timer.Add_Tick({
+    UpdatePlayerPosition
+})
+$timer.Start()
+
+# Muestra el formulario
+$form.ShowDialog() | Out-Null
