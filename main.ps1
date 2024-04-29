@@ -137,8 +137,8 @@ $form.Add_KeyUp({
 
 # Funcion para actualizar la posicion del jugador y guardarla en un archivo
 function UpdatePlayerPosition {
-    $newX = $PictureBox.Left + ($MoveX * 5)  # Multiplicamos por 5 para ajustar la velocidad
-    $newY = $PictureBox.Top + ($MoveY * 5)  # Multiplicamos por 5 para ajustar la velocidad
+    $newX = $PictureBox.Left + ($MoveX * 20)  # Multiplicamos por 5 para ajustar la velocidad
+    $newY = $PictureBox.Top + ($MoveY * 20)  # Multiplicamos por 5 para ajustar la velocidad
     $PictureBox.Location = New-Object System.Drawing.Point($newX, $newY)
 
     # Verificar colisión
